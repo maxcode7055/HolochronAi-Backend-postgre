@@ -1,5 +1,5 @@
-from apps.models import DefaultCategory
-from apps import db
+# from apps.models import DefaultCategory
+# from apps import db
 from sqlalchemy.orm import Query
 from sqlalchemy import desc
 def apply_filters(query: Query, model, filters: dict, sort_by: str = None, sort_order: str = 'asc') -> Query:

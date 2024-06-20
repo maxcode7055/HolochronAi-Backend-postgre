@@ -1,6 +1,6 @@
 # apps/routes/default_categories.py
 from flask import Blueprint, request, jsonify
-from apps.models import DefaultCategory
+from apps.models.default_category import DefaultCategory
 from apps import db
 from apps.services.default_categories_services import *
 
