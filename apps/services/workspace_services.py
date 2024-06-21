@@ -1,9 +1,13 @@
 from apps import db
 from apps.models.workspaces import Workspace
-
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, or_, and_
 
 def get_session():
     return db.session
+
+      
+   
+
 # def get_collection():
 #     try:
 #         db = get_db()
@@ -67,12 +71,12 @@ def add_workspace(data):
                 active=data['active'],
                 workspace_unique_id=data['workspace_unique_id'],
                 is_default=data['default'],
-                collaborators=data['collaborators']
+                # collaborators=data['collaborators']
             )
             session.add(new_workspace)
             session.commit()
             new_workspace_dict = {c.key: getattr(new_workspace, c.key) for c in new_workspace.__table__.columns}
-            return new_workspace
+            return new_workspace_dict
     except Exception as e:
                 return {"status": 301, "message": f"KeyError: {str(e)}"}, 301
             

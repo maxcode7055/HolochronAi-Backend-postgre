@@ -1,5 +1,21 @@
 from apps import db
 from apps.models.users import User
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, or_, and_
+# Define your function to create the filter expression
+def create_user_filter(email):
+    return and_(
+        User.email == email,
+        User.deleted == False,
+        or_(
+            User.is_google_login == False,
+            User.is_google_login == None
+        ),
+        or_(
+            User.is_microsoft_login == False,
+            User.is_microsoft_login == None
+        )
+    )
+
 def get_session():
     return db.session
 
@@ -18,29 +34,16 @@ def check_user_exists(query):
 #     except Exception as e:
 #             return {"status": 301, "message": f"KeyError: {str(e)}"}, 301
 
-# def get_user_detail(query):
-#     try:
-#         collection = get_collection()
-#         collection.create_index({ "email": 1, "is_google_login": 1 })
-#         collection.create_index({ "email": 1, "is_microsoft_login": 1 })
-#         pipeline = [
-#             {"$match":query},
-#             {
-#                   "$project":{
-#                         "_id": { "$toString": "$_id" },
-#                         "name":1,
-#                         "email":1,
-#                         "password":1,
-#                         "chat_setting":1,
-#                         "is_google_login":1,
-#                         "is_microsoft_login":1
-#                   }
-#             } ]
-#         user = collection.aggregate(pipeline)
+def get_user_detail(query):
+    try:
+        session = get_session()
+        user = session.query(User).filter(query).first()
+        # user_dict = {c.key: getattr(user, c.key) for c in user.__table__.columns}
+        return user
+    except Exception as e:
+            return {"status": 301, "message": f"KeyError: {str(e)}"}, 301
 
-#         return user
-#     except Exception as e:
-#             return {"status": 301, "message": f"KeyError: {str(e)}"}, 301
+
 
 # def get_user_by_id(user_id):
 #     try:

@@ -11,12 +11,13 @@ class Workspace(db.Model):
     active = db.Column(db.Boolean, nullable=False)
     workspace_unique_id = db.Column(db.String(255), nullable=False)
     is_default = db.Column(db.Boolean, nullable=False)
-    collaborators = db.Column(db.JSON, nullable=False)
+    # collaborators = relationship('User', secondary='workspace_collaborators')
+
 
     user_workspaces = relationship('UserWorkspace', back_populates='workspace')  # Relationship to User
     character = relationship('Character', back_populates='workspace')
 
-    def __init__(self,  workspace_name, settings, created_at, deleted, active, workspace_unique_id, is_default, collaborators):
+    def __init__(self,  workspace_name, settings, created_at, deleted, active, workspace_unique_id, is_default):
        
         self.workspace_name = workspace_name
         self.settings = settings
@@ -25,4 +26,4 @@ class Workspace(db.Model):
         self.active = active
         self.workspace_unique_id = workspace_unique_id
         self.is_default = is_default
-        self.collaborators = collaborators
+        # self.collaborators = collaborators

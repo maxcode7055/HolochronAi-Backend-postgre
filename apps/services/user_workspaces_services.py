@@ -1,5 +1,14 @@
 from apps import db
 from apps.models.user_workspace import UserWorkspace
+from apps.models.workspaces import Workspace
+from apps.models.workspace_collaborators import WorkspaceCollaborators
+from apps.models.users import User
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, or_, and_
+from sqlalchemy.orm import joinedload
+
+
+def get_workspaces_filter():
+    return  {UserWorkspace.deleted == False}
 def get_session():
     return db.session
 # def get_collection():
@@ -18,96 +27,57 @@ def get_session():
 #     except Exception as e:
 #             return {"status": 301, "message": f"KeyError: {str(e)}"}, 301
 
-# def user_workspaces_detail(query):
-#     try:
-#         collection = get_collection()
-#         workspaces = collection.find_one(query)
-#         return workspaces
-#     except Exception as e:
-#             return {"status": 301, "message": f"KeyError: {str(e)}"}, 301
-# def get_all_user_workspaces(query, user_id):
-#     try:
-#         collection = get_collection()
+def user_workspaces_detail(query):
+    try:
+        collection = get_collection()
+        workspaces = collection.find_one(query)
+        return workspaces
+    except Exception as e:
+            return {"status": 301, "message": f"KeyError: {str(e)}"}, 301
+def get_all_user_workspaces(query, user_id):
+    try:
+        session = get_session()
+        query = (
+            session.query(UserWorkspace, Workspace, User, User.email, WorkspaceCollaborators)
+            .join(Workspace, UserWorkspace.workspace_id == Workspace.id)
+            .join(User, UserWorkspace.user_id == User.id)
+            .outerjoin(WorkspaceCollaborators, WorkspaceCollaborators.workspace_id == Workspace.id)
+            .filter(UserWorkspace.user_id == user_id)
+            .filter(UserWorkspace.deleted == False)  # Filter for non-deleted user_workspaces
+            .filter(Workspace.deleted == False)  # Filter for non-deleted workspaces
+            .options(
+                joinedload(UserWorkspace.user),
+                joinedload(UserWorkspace.workspace)
+            )
+            .all()
+        )
+        # print("query---------------------------",query)
+        # Transform query result into desired format
+        user_workspace_details = []
+        for user_workspace, workspace, user, collaborator_email, workspace_collaborators in query:
+            # Extract collaborators' email addresses
+            collaborators_emails = []
+            collaborators_ids = False
+            if workspace_collaborators:
+                collaborators_ids = [collaborator.id for collaborator in workspace_collaborators]
+                collaborators_emails = [collaborator.email for collaborator in workspace_collaborators]
+            # print("user_workspace----------------",user_workspace)
+            # print("workspace---------------------",workspace)
+            # print("user-----------------------",user)
+            # print("collaborator_email------------------",collaborator_email)
+            # print("workspace_collaborators-------------------",workspace_collaborators)
+            user_workspace_details.append({
+                "_id": workspace.id,
+                "workspace_name": workspace.workspace_name,
+                "settings": workspace.settings,
+                "role": "editor" if collaborators_ids and user_id in collaborators_ids else "admin",
+                "collaborators": collaborators_emails,
+                "workspace_unique_id":workspace.workspace_unique_id
+            })
 
-#         pipeline = [
-#             {"$match": query},
-#             {"$sort": {"_id": -1}},
-#             {
-#                 "$lookup": {
-#                     "from": "workspaces",
-#                     "localField": "workspace_id",
-#                     "foreignField": "_id",
-#                     "as": "workspace_info"
-#                 }
-#             },
-#             {
-#                 "$unwind": "$workspace_info"
-#             },
-#             {
-#                 "$lookup": {
-#                     "from": "users",
-#                     "localField": "workspace_info.collaborators",
-#                     "foreignField": "_id",
-#                     "as": "workspace_info.collaborators_detail",
-#                     "pipeline":[
-#                          {"$match":{'deleted': False}},
-#                          {"$project":{'email': 1}}
-#                     ]
-#                 }
-#             },
-#             {
-#                 "$addFields": {
-#                     "workspace_info.role": {
-#                         "$cond": {
-#                             "if": {"$eq": ["$workspace_info.collaborators", user_id]},
-#                             "then": "editor",
-#                             "else": "admin"
-#                         }
-#                     },
-#                     "workspace_info.workspace_unique_id": {
-#                         "$ifNull": [
-#                             "$workspace_info.workspace_unique_id",
-#                             {"$concat": [
-#                                 {"$toLower": {"$arrayElemAt": [{"$split": ["$workspace_info.workspace_name", " "]}, 0]}},
-#                                 "_",
-#                                 {"$toLower": {"$arrayElemAt": [{"$split": ["$workspace_info.workspace_name", " "]}, 1]}},
-#                                 "-1234"
-#                             ]}
-#                         ]
-#                     },
-#                      "workspace_info.collaborators_emails": {
-#                             "$map": {
-#                                 "input": "$workspace_info.collaborators_detail",
-#                                 "as": "collaborator",
-#                                 "in": "$$collaborator.email"
-#                             }
-#                         },
-#                 }
-#             },
-#             {
-#                 "$project": {
-#                     "_id": 0,
-#                     "workspace_info": {
-#                         "_id": {"$toString": "$workspace_info._id"},
-#                         "workspace_name": 1,
-#                         "settings": 1,
-#                         "collaborators": "$workspace_info.collaborators_emails",
-#                         "role": 1,
-#                         "workspace_unique_id": 1
-#                     }
-#                 }
-#             }
-#         ]
-
-        
-#         workspace = collection.aggregate(pipeline)
-
-
-
-#         # workspace = collection.find(query)
-#         return workspace
-#     except Exception as e:
-#             return {"status": 301, "message": f"KeyError: {str(e)}"}, 301
+        return user_workspace_details
+    except Exception as e:
+            return {"status": 301, "message": f"KeyError: {str(e)}"}, 301
 
 
 def user_workspaces_add(data):

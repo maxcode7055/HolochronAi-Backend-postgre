@@ -7,10 +7,10 @@ from apps.routes.character import create_default_character
 from apps.utils.helper import randon_number, join_string_by_under_score
 from apps.services.users import *
 from apps.routes.users import *
-from bson import ObjectId
+
 import json
 import datetime 
-# from apps.middleware.jwt_auth import required_token
+from apps.middleware.jwt_auth import required_token
 from apps.tasks import send_email, send_multiple_email
 
 workspace_bp = Blueprint('workspace', __name__)
@@ -23,7 +23,7 @@ workspace_bp = Blueprint('workspace', __name__)
     
     
 def create_default_workspace():
-    # try: 
+    try: 
         workspace_unique_id  = join_string_by_under_score('Holochron AI Demo') + "-" +randon_number()
         workspace_data = { 
             'workspace_name': 'Holochron AI Demo',
@@ -36,22 +36,20 @@ def create_default_workspace():
             'deleted':False,
             'active':True,
             "workspace_unique_id":workspace_unique_id,
-            "default":False,
-            "collaborators":[]
+            "default":False
         }
         
         result = add_workspace(workspace_data)
-        
-        if result.id:
-            create_default_character(result.id)
-            return result.id
+        if result['id']:
+            create_default_character(result['id'])
+            return result['id']
         else:
             return False
-    # except Exception as e:
-    #     return {'error': True, 'message': str(e)}
+    except Exception as e:
+        return {'error': True, 'message': str(e)}
 
     
-# class WorkspaceService:
+class WorkspaceService:
     
 #     @workspace_bp.route('/createWorkspace', methods=['POST'])
     
@@ -95,55 +93,27 @@ def create_default_workspace():
 #             return jsonify({"error":True, "status": 301, "message": f"Error: {str(e)}"}), 301
 
 
-#     @workspace_bp.route('/workspaces', methods=['GET'])
-    
-#     @required_token
-
-#     def get_workspaces():
-#         try:
-#             print("innnnn")
-#             session_data = getattr(g, 'session_data', None)
-#             user_id = ObjectId(session_data.get('id'))
-#             # Filter to get workspaces where the user is either the owner or collaborator, and not deleted
-#             query = {
-#                 "$and": [
-#                     {"$or": [
-#                         {"user_id": user_id},
-#                         {"workspace_info.collaborators": user_id}
-#                     ]},
-#                     {"deleted": False}
-#                 ]
-#             }
-#             workspaces = list(get_all_user_workspaces(query, user_id))
-#             if workspaces and len(workspaces)>0:
-#                 workspace_info_list = []
-#                 if "workspace_info" in workspaces[0]:
-#                     workspace_info_list = [workspace['workspace_info'] for workspace in workspaces]
-#                 return jsonify({"error": False, "message": "", "data": workspace_info_list}), 200
-#             else:
-#                 # If no workspaces found, create a default one
-#                 workspace = get_workspace_detail({'default': True})
-#                 workspace_id = workspace["_id"] if workspace else create_default_workspace()
-#                 user_workspace_data = {
-#                     'user_id': user_id,
-#                     'workspace_id': ObjectId(workspace_id),
-#                     'deleted': False,
-#                     'active': True
-#                 }
-#                 user_workspaces_add(user_workspace_data)
-
-#                 # Get user workspaces again after adding the default one
-#                 user_workspace_query = {
-#                     "user_id": user_id,
-#                     "$or": [{'deleted': False}, {'deleted': {"$exists": False}}],
-#                     "$or": [{'active': True}, {'active': {"$exists": False}}]
-#                 }
-#                 user_workspace = get_all_user_workspaces(user_workspace_query, user_id)
-                
-#                 workspace_info_list = [workspace['workspace_info'] for workspace in user_workspace]
-#                 return jsonify({"error": False, "message": "", "data": workspace_info_list}), 200
-#         except Exception as e:
-#             return jsonify({"error": True, "status": 301, "message": f"Error: {str(e)}"}), 301
+    @workspace_bp.route('/workspaces', methods=['GET'])
+    @required_token
+    def get_workspaces():
+        try:
+            session_data = getattr(g, 'session_data', None)
+            user_id = session_data.get('id')
+            # Filter to get workspaces where the user is either the owner or collaborator, and not deleted
+            query = get_workspaces_filter()
+            workspaces = get_all_user_workspaces(query, user_id)
+            if workspaces and len(workspaces)>0:
+                # workspace_info_list = []
+                # if "workspace_info" in workspaces[0]:
+                #     workspace_info_list = [workspace['workspace_info'] for workspace in workspaces]
+                return jsonify({"error": False, "message": "", "data": workspaces}), 200
+            else:
+               
+                return jsonify({"error": True, "message": "No workspace found", "data": []}), 200
+        
+        
+        except Exception as e:
+            return jsonify({"error": True, "status": 301, "message": f"Error: {str(e)}"}), 301
 
 
 #     @workspace_bp.route('/deleteWorkspace', methods=['POST'])
