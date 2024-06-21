@@ -1,4 +1,5 @@
 from apps import db
+from sqlalchemy.orm import relationship
 class User(db.Model):
     __tablename__ = 'users'
     
@@ -12,5 +13,7 @@ class User(db.Model):
     active = db.Column(db.Boolean, default=True)
     deleted = db.Column(db.Boolean, default=False)
 
+    user_workspaces = relationship('UserWorkspace', back_populates='user')  # Relationship to UserWorkspace
+    # user_workspaces = relationship('UserWorkspace', back_populates='user')
     def __repr__(self):
         return f'<User {self.email}>'

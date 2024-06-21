@@ -1,6 +1,6 @@
 # apps/models.py
 from apps import db
-
+from sqlalchemy.orm import relationship
 class DefaultCategory(db.Model):
     __tablename__ = 'default_categories'
     

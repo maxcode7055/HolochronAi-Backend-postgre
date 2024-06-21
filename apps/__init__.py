@@ -22,6 +22,7 @@ def create_app():
     app.config['DEVELOPMENT_FRONT_URL'] = os.getenv('DEVELOPMENT_FRONT_URL')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Mghgou%40%23%24%25%5E87%29%28%2A%2A%29@localhost/holochron_db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.secret_key = os.getenv('OPEN_AI_SECRET_KEY') 
 
     db.init_app(app)
     jwt.init_app(app)

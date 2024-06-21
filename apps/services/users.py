@@ -121,13 +121,15 @@ def check_user_exists(query):
 #     except Exception as e:
 #         return {"status": 301, "message": f"KeyError: {str(e)}"}, 301
 
-# def add_user(data):
-#     try:
-#         collection = get_collection()
-#         insert_result = collection.insert_one(data)
-#         return insert_result
-#     except Exception as e:
-#                 return {"status": 301, "message": f"KeyError: {str(e)}"}, 301
+def add_user(data):
+    try:
+        session = get_session()
+        new_user = User(email=data['email'], password=data['password'], name=data['name'], is_google_login=data['is_google_login'], is_microsoft_login=data['is_microsoft_login'], chat_setting=data['chat_setting'], active=data['active'], deleted=data['deleted'])
+        session.add(new_user)
+        session.commit()
+        return new_user  # Return the id of the newly inserted user
+    except Exception as e:
+                return {"status": 301, "message": f"KeyError: {str(e)}"}, 301
             
 # def update_user_profile(where, data):
 #     try:

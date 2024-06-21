@@ -1,14 +1,14 @@
 from flask import Blueprint, request, jsonify, g, current_app,  render_template #redirect, url_for
 # from apps.middleware.jwt_auth import required_token
 from apps.utils.helper import *
-from apps.services.users import check_user_exists #add_user, get_user_detail, update_user_profile, get_user_info, update_user_profile_data
+from apps.services.users import check_user_exists, add_user  #get_user_detail, update_user_profile, get_user_info, update_user_profile_data
 from flask_jwt_extended import create_access_token, decode_token
 # from apps.routes.character import create_default_character
-# from apps.routes.workspace import create_default_workspace
-# from apps.routes.users import add
-from pymongo.errors import PyMongoError
-from bson import ObjectId
-# from apps.services.user_workspaces_services import *
+from apps.routes.workspace import create_default_workspace
+from apps.routes.users import add
+
+
+from apps.services.user_workspaces_services import *
 import requests
 from apps.tasks import send_email
 from datetime import timedelta
@@ -90,7 +90,7 @@ class AuthService:
 
     @auth_bp.route('/register', methods=['POST'])
     def register():
-        # try:
+        try:
             email = request.json.get('email')
             password = request.json.get('password')
             name = request.json.get('fullname')
@@ -114,8 +114,8 @@ class AuthService:
             send_email("Verify email id", email.lower(), html_content)
             return jsonify({'status': 200, 'error': False, 'message': f"A verification link has been sent to email id {email.lower()}.", 'verification_link': verification_link}), 200
         
-        # except Exception as e:
-        #     return jsonify({'status': 301, 'error': True, 'message': 'General error: ' + str(e)}), 301
+        except Exception as e:
+            return jsonify({'status': 301, 'error': True, 'message': 'General error: ' + str(e)}), 301
 
 
     # @auth_bp.route('/reverification', methods=['POST'])
@@ -147,45 +147,55 @@ class AuthService:
     #         return jsonify({'status': 500, 'error': True, 'message': f"General error: {str(e)}"}), 500
 
     
-    # @auth_bp.route('/verifyemail', methods=['GET'])
-    # def verify_email():
-    #     try:
-    #         auth_header = request.headers.get('Authorization')
+    @auth_bp.route('/verifyemail', methods=['GET'])
+    def verify_email():
+        # try:
+            auth_header = request.headers.get('Authorization')
             
-    #         if not auth_header:
-    #             return jsonify({"error":True,"status": 301, "message": "Authorization header is missing"}), 301
-    #         token = auth_header.split(" ")[1]  # Extract token from header
-    #         decoded_token = decode_token(token)
-    #         if decoded_token:
-    #             added = add(decoded_token['sub'])
-                
-    #             if added:
-                    
-    #                 workspace_id = create_default_workspace()
-                   
-    #                 user_workspace_data = {
-    #                     'user_id': added,
-    #                     'workspace_id': ObjectId(workspace_id),
-    #                     'deleted':False,
-    #                     'active':True
-    #                 }
-    #                 user_workspaces_add(user_workspace_data)
-    #                 expires = timedelta(hours=24)
-    #                 token = create_access_token(identity={'name':decoded_token['sub']['name'],'email':decoded_token['sub']['email'].lower(),"id":str(added)}, expires_delta=expires)
-                    
-    #                 return jsonify({ 'status':200,'error': False, 'message': 'User has been verified successfully.', 'data':{"_id":str(added),'userdata':{
-    #                     'name':decoded_token['sub']['name'],
-    #                     'email':decoded_token['sub']['email'].lower(),
-    #                     "has_password":True
-                        
-    #                     }, "access_token":token}}), 200
-    #             else:
-    #                 return jsonify({'status':301, 'error': True, 'message': 'Unable to verify user right now.'}), 301
-    #         else:
-    #             return jsonify({'status':301, 'error': True, 'message': 'Token has been expired ccc.'}), 301
-    #     except Exception as e:
-    #         return jsonify({'status':301, 'error': True, "message": "Token has been expired s."}), 301
+            if not auth_header:
+                return jsonify({"error":True,"status": 301, "message": "Authorization header is missing"}), 301
+            token = auth_header.split(" ")[1]  # Extract token from header
+            decoded_token = decode_token(token)
+            
+            if decoded_token:
+                user_exists = check_user_exists({"email": decoded_token['sub']['email'].lower()})
 
+                if user_exists:
+                    return jsonify({'status': 301, 'error': True, 'message': f"User '{decoded_token['sub']['email'].lower()}' exists"}), 301
+                
+                added_user_id = add(decoded_token['sub'])
+                
+                if added_user_id:
+                    
+                    workspace_id = create_default_workspace()
+                    
+                    user_workspace_data = {
+                        'user_id': added_user_id,
+                        'workspace_id': workspace_id,
+                        'deleted':False,
+                        'active':True
+                    }
+                    d = user_workspaces_add(user_workspace_data)
+                    
+                    expires = timedelta(hours=24)
+                    token = create_access_token(identity={'name':decoded_token['sub']['name'],'email':decoded_token['sub']['email'].lower(),"id":str(added_user_id)}, expires_delta=expires)
+                    
+                    return jsonify({ 'status':200,'error': False, 'message': 'User has been verified successfully.', 'data':{"_id":str(added_user_id),'userdata':{
+                        'name':decoded_token['sub']['name'],
+                        'email':decoded_token['sub']['email'].lower(),
+                        "has_password":True
+                        
+                        }, "access_token":token}}), 200
+                else:
+                    return jsonify({'status':301, 'error': True, 'message': 'Unable to verify user right now.'}), 301
+            else:
+                return jsonify({'status':301, 'error': True, 'message': 'Token has been expired c.'}), 301
+        # except Exception as e:
+        #     return jsonify({'status':301, 'error': True, "message": "Token has been expired."}), 301
+
+    
+    
+    
     # @auth_bp.route('/accept-invite', methods=['GET'])
     # def accept_invite():
     #     try:
