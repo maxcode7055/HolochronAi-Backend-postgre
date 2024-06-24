@@ -36,7 +36,18 @@ class Character(db.Model):
     dialogue_structure = db.Column(db.Text)
     personal_knowledge = db.Column(db.Text)
     created_at = db.Column(db.Float, nullable=False)
+    avatar_url =  db.Column(db.Text)
+    yaml_file_path =  db.Column(db.Text)
+    stage_of_life =  db.Column(db.Text)
+    alternative_names =  db.Column(db.Text)
+    hobbies_and_interests =  db.Column(db.Text)
+    avatar_key =  db.Column(db.Text)
+    dialogue_style =  db.Column(db.Text)
+    knowledge_filters =  db.Column(db.Text)
+    common_knowledge =  db.Column(db.Text)
     workspace = relationship('Workspace', back_populates='character')
+
+    # knowledge = relationship('Knowledge', back_populates='character')
 
     def __init__(self, workspace_id, name, avatar, description, language, actions_state, personality_traits, state_of_mind, character_scenes, long_term_memory, node_based_story, deleted, active, configure_avatar, knowledge_bank, memory, settings, safety, safety_status, hobbies, pronouns, role, age, alternative_name, motivation, flaws, wikipedia_link, wikipedia_link_status, yaml_editor_status, dialogue_structure, personal_knowledge, created_at):
         

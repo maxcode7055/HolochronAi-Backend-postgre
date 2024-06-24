@@ -64,17 +64,18 @@ class AuthService:
     #     # Logout logic
     #     pass
 
-    # @auth_bp.route('/checkemail', methods=['POST'])
-    # def checkemail():
-    #     try:
-    #         email = request.json.get('email')
-    #         user_exists = check_user_exists({"email":email.lower()})
-    #         if user_exists:
-    #             return jsonify({'status':301,'error': True,'message': f"User '{email.lower()}' exists"}), 301
-    #         else:
-    #             return jsonify({'status':200,'error': False,'message': 'User not existed.'}), 200
-    #     except Exception as e:
-    #         return jsonify({'status':301,'error': True, "message": f"KeyError: {str(e)}"}), 301
+    @auth_bp.route('/checkemail', methods=['POST'])
+    def checkemail():
+        try:
+            email = request.json.get('email')
+            
+            user_exists = check_user_exists({"email":email.lower()})
+            if user_exists:
+                return jsonify({'status':301,'error': True,'message': f"User '{email.lower()}' exists"}), 301
+            else:
+                return jsonify({'status':200,'error': False,'message': 'User not existed.'}), 200
+        except Exception as e:
+            return jsonify({'status':301,'error': True, "message": f"KeyError: {str(e)}"}), 301
 
 
     @auth_bp.route('/register', methods=['POST'])

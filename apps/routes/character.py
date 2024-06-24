@@ -3,10 +3,10 @@
 from flask import Blueprint, request, jsonify, g, send_from_directory, current_app, url_for
 import os
 from apps.utils.helper import *
-# from apps.middleware.jwt_auth import required_token
+from apps.middleware.jwt_auth import required_token
 from apps.services.users import check_user_exists, add_user #, get_user_detail
 from apps.services.characters_services import *
-# from apps.services.user_workspaces_services import *
+from apps.services.user_workspaces_services import *
 # from urllib.parse import urljoin
 # from apps.services.knowledge_services import *
 # from apps.services.scenes_services import *
@@ -21,7 +21,62 @@ import uuid
 
 
 character_bp = Blueprint('character', __name__, static_folder='uploads')
-# class CharacterService: 
+class CharacterService: 
+    @character_bp.route('/api/characters', methods=['POST'])
+    @required_token
+    
+    def get_characters():
+        try:
+            session_data = getattr(g, 'session_data', None)
+            print(session_data)
+            workspace_id = request.json.get('workspace_id') if request.content_type == 'application/json' else "all"
+
+            query =  """ (user_id = :user_id OR user_id IS NULL)
+              AND (deleted = FALSE OR deleted IS NULL)
+              AND (active = TRUE OR active IS NULL)"""
+            workspace_info_ids = []
+            
+            if workspace_id == "all":
+                # Get all user workspaces
+                q = get_characters_workspaces_filter(session_data['id'])
+                workspaces = list(get_all_user_workspaces(q, session_data['id']))
+
+                # Extract workspace_info IDs
+                workspace_info_ids = [
+                    ObjectId(item['workspace_info']['_id'])
+                    for item in workspaces if item and item.get('workspace_info')
+                ]
+
+                if workspace_info_ids:
+                    # query["$and"].append({"workspace_id": {"$in": workspace_info_ids}})
+                    query =  """
+                    AND (user_id = :user_id OR user_id IS NULL)
+                    AND (deleted = FALSE OR deleted IS NULL)
+                    AND (active = TRUE OR active IS NULL)
+                    AND workspace_id IN :workspace_info_ids """
+                    
+            else:
+                query =  """AND (user_id = :user_id OR user_id IS NULL)
+                    AND (deleted = FALSE OR deleted IS NULL)
+                    AND (active = TRUE OR active IS NULL)
+                    AND workspace_id = :workspace_id"""
+                    
+
+            # Get characters based on the constructed query
+            params = {
+                "user_id": session_data["id"],
+                "workspace_id": workspace_id,
+                "image_url": os.getenv("IMAGE_URL"),
+                "workspace_info_ids":workspace_info_ids
+            }
+            characters = get_all_characters(query, params)
+            if characters:
+                return jsonify({"error": False, "message": "", "data": characters}), 200
+            else:
+                return jsonify({"error": True, "message": "No characters are added for selected workspaces yet.", "data": []}), 301
+
+        except Exception as e:
+            return jsonify({"error": True, "status": 301, "message": f"Error: {str(e)}"}), 301
 
     
     # def get_characters():
@@ -1048,7 +1103,6 @@ def create_default_character(workspace_id):
                 "node_based_story":False,
                 'deleted':False,
                 'active':True,
-
                 "configure_avatar":"",
                 "knowledge_bank":"",
                 "memory" :[],

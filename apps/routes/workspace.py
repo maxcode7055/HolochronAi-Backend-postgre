@@ -103,14 +103,9 @@ class WorkspaceService:
             query = get_workspaces_filter()
             workspaces = get_all_user_workspaces(query, user_id)
             if workspaces and len(workspaces)>0:
-                # workspace_info_list = []
-                # if "workspace_info" in workspaces[0]:
-                #     workspace_info_list = [workspace['workspace_info'] for workspace in workspaces]
                 return jsonify({"error": False, "message": "", "data": workspaces}), 200
             else:
-               
                 return jsonify({"error": True, "message": "No workspace found", "data": []}), 200
-        
         
         except Exception as e:
             return jsonify({"error": True, "status": 301, "message": f"Error: {str(e)}"}), 301

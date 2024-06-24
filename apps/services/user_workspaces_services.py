@@ -9,6 +9,9 @@ from sqlalchemy.orm import joinedload
 
 def get_workspaces_filter():
     return  {UserWorkspace.deleted == False}
+def get_characters_workspaces_filter(userid):
+     return {UserWorkspace.user_id == userid}
+     
 def get_session():
     return db.session
 # def get_collection():
@@ -27,13 +30,14 @@ def get_session():
 #     except Exception as e:
 #             return {"status": 301, "message": f"KeyError: {str(e)}"}, 301
 
-def user_workspaces_detail(query):
-    try:
-        collection = get_collection()
-        workspaces = collection.find_one(query)
-        return workspaces
-    except Exception as e:
-            return {"status": 301, "message": f"KeyError: {str(e)}"}, 301
+# def user_workspaces_detail(query):
+#     try:
+#         collection = get_collection()
+#         workspaces = collection.find_one(query)
+#         return workspaces
+#     except Exception as e:
+#             return {"status": 301, "message": f"KeyError: {str(e)}"}, 301
+    
 def get_all_user_workspaces(query, user_id):
     try:
         session = get_session()
@@ -51,7 +55,7 @@ def get_all_user_workspaces(query, user_id):
             )
             .all()
         )
-        # print("query---------------------------",query)
+        
         # Transform query result into desired format
         user_workspace_details = []
         for user_workspace, workspace, user, collaborator_email, workspace_collaborators in query:
@@ -61,11 +65,7 @@ def get_all_user_workspaces(query, user_id):
             if workspace_collaborators:
                 collaborators_ids = [collaborator.id for collaborator in workspace_collaborators]
                 collaborators_emails = [collaborator.email for collaborator in workspace_collaborators]
-            # print("user_workspace----------------",user_workspace)
-            # print("workspace---------------------",workspace)
-            # print("user-----------------------",user)
-            # print("collaborator_email------------------",collaborator_email)
-            # print("workspace_collaborators-------------------",workspace_collaborators)
+            
             user_workspace_details.append({
                 "_id": workspace.id,
                 "workspace_name": workspace.workspace_name,
